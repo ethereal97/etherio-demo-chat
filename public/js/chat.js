@@ -17,6 +17,7 @@ let typing = {
 		this.timeout = null;
 	},
     remove() {
+		this.timeout && this.clear();
         if(!this.el) return;
 		this.el.remove();
 		this.el = null;
@@ -25,11 +26,7 @@ let typing = {
 		this.el ||this.create(name);
 		_parent && this.appendTo(_parent);
 		var _self = this;
-		var end = () => {
-		  _self.el.remove();
-		  _self.el = null;
-		};
-		this.timeout = setTimeout(() => end(), this.delay);
+		this.timeout = setTimeout(() => _self.remove(), this.delay);
 	},
     restart(name) {
 		this.clear();
@@ -49,6 +46,8 @@ let el = {
     send: document.getElementById('send'),
     output: document.getElementById('output'),
     feedback: document.getElementById('feedback'),
+    online: document.getElementById('online'),
+    users: document.getElementById('users'),
 };
 
 const socket = io.connect(url);
@@ -67,20 +66,35 @@ socket.on('connect', function () {
 	});
 
     socket.on('connected', function (data) {
+		el.online.textContent = data.online.length;
+        updateOnlineUsers(data.online, el.users);
+			
 		var output = document.createElement('p');
-		output.innerHTML = `<em><strong>${data.nickname}</strong> has joined.</em>`;
+		output.style.color = 'green';
+		output.innerHTML = `<smalli<em><strong>${data.nickname}</strong> has joined.</em></small>`;
 		el.output.appendChild(output);
 	});	
+    
+    socket.on('disconnected', function (data) {
+        el.online.textContent = data.online.length;
+        updateOnlineUsers(data.online, el.users);
+ 		var output = document.createElement('p');
+		output.style.color = 'red';
+		output.innerHTML = `<small><em><strong>${data.nickname}</strong> was leaved.</em></small>`;
+		el.output.append(output);
+	});
+
 
     nickname = getCookie('nickname');
+
     if (nickname) {
         el.nickname.value = nickname;
 		el.nickname.setAttribute('disabled', '1');
         socket.emit('connected', { nickname });
     }
+				
     el.send.removeAttribute('disabled');
 });
-
 
 el.send.addEventListener('click', function() {
      nickname = el.nickname.value;
@@ -93,6 +107,7 @@ el.send.addEventListener('click', function() {
     el.nickname.setAttribute('disabled', '1');
     var max = 7 * 24 * 60 * 60;
     document.cookie = `nickname=${nickname};max-age=${max}`;
+    typing.remove();
 });
 
 el.message.addEventListener('keyup', function(event) {
@@ -119,3 +134,13 @@ function getCookie(name) {
     alert('[ERR] ' + error.message);
 }
 
+function updateOnlineUsers(users, elem) {
+    elem.childNodes.forEach(child => child.remove());
+
+    for (let i in users) {
+        var user = users[i];
+		var list = document.createElement('li');
+		list.textContent = user;
+		elem.appendChild(list);
+	}
+}
