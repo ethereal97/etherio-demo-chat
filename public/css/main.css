@@ -1,0 +1,18 @@
+* {
+  box-sizing: 'border-box';
+}
+
+:root {
+  --bg-light: #f2d2f2,
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg-light);
+}
+
+
